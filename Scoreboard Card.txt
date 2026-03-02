@@ -1,0 +1,299 @@
+type: custom:button-card
+show_name: false
+show_icon: false
+show_label: true
+tap_action:
+  action: none
+styles:
+  card:
+    - background: "#1a1a2e"
+    - border-radius: 16px
+    - padding: 16px
+  label:
+    - width: 100%
+    - text-align: center
+    - font-family: Arial, sans-serif
+    - color: white
+label: |
+  [[[
+    const gd = states['sensor.bj_master_data']?.attributes?.gameData;
+    const live = states['sensor.bj_master_data']?.attributes?.liveData;
+    const nextDates = states['sensor.bj_next_game']?.attributes?.dates ?? [];
+
+    const awayName = gd?.teams?.away?.name ?? 'Away';
+    const homeName = gd?.teams?.home?.name ?? 'Home';
+    const awayAbbr = gd?.teams?.away?.abbreviation ?? 'AWY';
+    const homeAbbr = gd?.teams?.home?.abbreviation ?? 'HME';
+    const awayId   = gd?.teams?.away?.id ?? '';
+    const homeId   = gd?.teams?.home?.id ?? '';
+    const status   = gd?.status?.detailedState ?? 'No Game';
+    const stadium  = gd?.venue?.name ?? '';
+    const gameDate = gd?.datetime?.officialDate ?? '';
+    const gameTime = (gd?.datetime?.time ?? '') + ' ' + (gd?.datetime?.ampm ?? '');
+
+    const ls = live?.linescore;
+    const awayRuns   = ls?.teams?.away?.runs ?? 0;
+    const homeRuns   = ls?.teams?.home?.runs ?? 0;
+    const awayHits   = ls?.teams?.away?.hits ?? 0;
+    const homeHits   = ls?.teams?.home?.hits ?? 0;
+    const awayErrors = ls?.teams?.away?.errors ?? 0;
+    const homeErrors = ls?.teams?.home?.errors ?? 0;
+    const inningHalf = ls?.inningHalf ?? '';
+    const inningNum  = ls?.currentInning ?? 0;
+    const balls   = ls?.balls ?? 0;
+    const strikes = ls?.strikes ?? 0;
+    const outs    = ls?.outs ?? 0;
+    const innings = ls?.innings ?? [];
+
+    const onFirst  = !!(ls?.offense?.first);
+    const onSecond = !!(ls?.offense?.second);
+    const onThird  = !!(ls?.offense?.third);
+
+    const statusColor = status.includes('Progress') ? '#4CAF50'
+                      : status.includes('Final') ? '#f44336' : '#FFC107';
+
+    // ── WIN PROBABILITY ───────────────────────────────────────
+    let winProbHtml = '';
+    try {
+      const plays = live?.plays?.allPlays ?? [];
+      let awayProb = null;
+      let homeProb = null;
+
+      for (let i = plays.length - 1; i >= 0; i--) {
+        const events = plays[i].playEvents ?? [];
+        for (let j = events.length - 1; j >= 0; j--) {
+          const wpData = events[j]?.winProbability;
+          if (wpData) {
+            awayProb = wpData.awayTeamProbability ?? null;
+            homeProb = wpData.homeTeamProbability ?? null;
+            break;
+          }
+        }
+        if (awayProb !== null) break;
+      }
+
+      const cpEvents = live?.plays?.currentPlay?.playEvents ?? [];
+      for (let j = cpEvents.length - 1; j >= 0; j--) {
+        const wpData = cpEvents[j]?.winProbability;
+        if (wpData) {
+          awayProb = wpData.awayTeamProbability ?? awayProb;
+          homeProb = wpData.homeTeamProbability ?? homeProb;
+          break;
+        }
+      }
+
+      if (awayProb !== null && homeProb !== null) {
+        const awayPct  = Math.round(awayProb * 100);
+        const homePct  = Math.round(homeProb * 100);
+        const awayColor = awayPct > homePct ? '#4CAF50' : '#aaa';
+        const homeColor = homePct > awayPct ? '#4CAF50' : '#aaa';
+
+        winProbHtml = `
+          <div style="background:#12122a;border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+            <div style="font-size:10px;color:#aaa;letter-spacing:1px;margin-bottom:8px;">WIN PROBABILITY</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;font-weight:bold;color:${awayColor};min-width:36px;text-align:right;">${awayPct}%</span>
+              <div style="flex:1;height:10px;background:#1e1e40;border-radius:5px;overflow:hidden;">
+                <div style="height:100%;width:${awayPct}%;background:linear-gradient(to right,#1565c0,#4CAF50);border-radius:5px;"></div>
+              </div>
+              <span style="font-size:11px;font-weight:bold;color:${homeColor};min-width:36px;text-align:left;">${homePct}%</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px;">
+              <span style="font-size:10px;color:#555;">${awayAbbr}</span>
+              <span style="font-size:10px;color:#555;">${homeAbbr}</span>
+            </div>
+          </div>`;
+      }
+    } catch(e) {}
+
+    // ── NEXT GAME BOX FORMATTER ───────────────────────────────
+    function formatGameBox(game) {
+      const BJ_ID = 141;
+      const awayTeam = game.teams?.away?.team;
+      const homeTeam = game.teams?.home?.team;
+      const isHome   = homeTeam?.id === BJ_ID;
+      const opponent = isHome ? awayTeam : homeTeam;
+      const oppId    = opponent?.id ?? '';
+      const oppName  = opponent?.name ?? 'TBD';
+      const venue    = game.venue?.name ?? '';
+      const homeAway = isHome ? 'vs' : '@';
+      const rawDate  = game.gameDate ?? '';
+
+      let dateStr = '';
+      try {
+        const d = new Date(rawDate);
+        const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const hours  = d.getUTCHours();
+        const mins   = d.getUTCMinutes();
+        const ampm   = hours >= 12 ? 'PM' : 'AM';
+        const h      = hours % 12 || 12;
+        const m      = mins.toString().padStart(2, '0');
+        dateStr = `${days[d.getUTCDay()]}, ${months[d.getUTCMonth()]} ${d.getUTCDate()} · ${h}:${m} ${ampm} ET`;
+      } catch(e) { dateStr = rawDate; }
+
+      const oppLogo = oppId
+        ? `<img src="https://www.mlbstatic.com/team-logos/${oppId}.svg" width="28" height="28" style="vertical-align:middle;margin:0 6px;">`
+        : '';
+
+      return `
+        <div style="background:#12122a;border-radius:8px;padding:8px 12px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:10px;color:#FFC107;letter-spacing:1px;text-transform:uppercase;font-weight:bold;">NEXT ▶</span>
+            <img src="https://www.mlbstatic.com/team-logos/141.svg" width="28" height="28" style="vertical-align:middle;">
+            <span style="font-size:13px;font-weight:bold;color:#aaa;">${homeAway}</span>
+            ${oppLogo}
+            <span style="font-size:13px;font-weight:bold;">${oppName}</span>
+            <span style="color:#555;">·</span>
+            <span style="font-size:11px;color:#aaa;">${dateStr}</span>
+          </div>
+          ${venue ? `<div style="font-size:11px;color:#777;margin-top:4px;">🏟️ ${venue}</div>` : ''}
+        </div>`;
+    }
+
+    // ── CURRENT GAME BOX ──────────────────────────────────────
+    let currentGameHtml = '';
+    try {
+      if (awayId && homeId) {
+        const liveLabel = status.includes('Progress')
+          ? `● ${inningHalf} ${inningNum}`
+          : status.includes('Final') ? 'FINAL' : gameTime;
+
+        currentGameHtml = `
+          <div style="background:#12122a;border-radius:8px;padding:8px 12px;margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:bold;color:${statusColor};">${liveLabel}</div>
+            ${stadium ? `<div style="font-size:11px;color:#777;margin-top:4px;">🏟️ ${stadium}</div>` : ''}
+          </div>`;
+      }
+    } catch(e) {}
+
+    // ── NEXT GAME (1 only) ────────────────────────────────────
+    let nextGameHtml = '';
+    try {
+      const BJ_ID = 141;
+      for (const date of nextDates) {
+        for (const game of date.games) {
+          const s = game.status?.abstractGameState ?? '';
+          if (s !== 'Final' && s !== 'Live') {
+            nextGameHtml = formatGameBox(game);
+            break;
+          }
+        }
+        if (nextGameHtml) break;
+      }
+    } catch(e) {}
+
+    function countDots(total, max, onColor) {
+      let html = '';
+      for (let i = 1; i <= max; i++) {
+        const c = i <= total ? onColor : '#333';
+        const b = i <= total ? onColor : '#555';
+        html += `<circle cx="${i * 22 - 11}" cy="10" r="8" fill="${c}" stroke="${b}" stroke-width="1.5"/>`;
+      }
+      return `<svg width="${max * 22}" height="20" xmlns="http://www.w3.org/2000/svg">${html}</svg>`;
+    }
+
+    const ballDots   = countDots(balls,   3, '#4CAF50');
+    const strikeDots = countDots(strikes, 2, '#f44336');
+    const outDots    = countDots(outs,    3, '#f44336');
+
+    const baseSize = 16;
+    const f1 = onFirst  ? '#4CAF50' : '#2a2a3a';
+    const f2 = onSecond ? '#4CAF50' : '#2a2a3a';
+    const f3 = onThird  ? '#4CAF50' : '#2a2a3a';
+    const s1 = onFirst  ? '#4CAF50' : '#555';
+    const s2 = onSecond ? '#4CAF50' : '#555';
+    const s3 = onThird  ? '#4CAF50' : '#555';
+
+    const diamond = `
+      <svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
+        <rect x="37" y="5" width="${baseSize}" height="${baseSize}" rx="2" fill="${f2}" stroke="${s2}" stroke-width="1.5" transform="rotate(45 45 13)"/>
+        <rect x="5" y="37" width="${baseSize}" height="${baseSize}" rx="2" fill="${f3}" stroke="${s3}" stroke-width="1.5" transform="rotate(45 13 45)"/>
+        <rect x="69" y="37" width="${baseSize}" height="${baseSize}" rx="2" fill="${f1}" stroke="${s1}" stroke-width="1.5" transform="rotate(45 77 45)"/>
+        <rect x="37" y="69" width="${baseSize}" height="${baseSize}" rx="2" fill="#555" stroke="#888" stroke-width="1.5" transform="rotate(45 45 77)"/>
+      </svg>`;
+
+    const awayLogo = awayId ? `<img src="https://www.mlbstatic.com/team-logos/${awayId}.svg" width="52" height="52" style="display:block;margin:0 auto 4px auto;">` : '';
+    const homeLogo = homeId ? `<img src="https://www.mlbstatic.com/team-logos/${homeId}.svg" width="52" height="52" style="display:block;margin:0 auto 4px auto;">` : '';
+
+    let lineScoreHtml = '';
+    if (innings.length > 0) {
+      const totalCols = innings.length + 1;
+      const fontSize  = totalCols <= 10 ? 11 : totalCols <= 12 ? 10 : 9;
+      const cellPad   = totalCols <= 10 ? '3px 4px' : totalCols <= 12 ? '2px 3px' : '2px 2px';
+      const teamPad   = totalCols <= 10 ? '3px 8px' : '2px 5px';
+      const cs  = `padding:${cellPad};text-align:center;font-size:${fontSize}px;border:1px solid #2a2a4a;`;
+      const hs  = `padding:${cellPad};text-align:center;font-size:${fontSize - 1}px;color:#aaa;border:1px solid #2a2a4a;background:#0d0d1a;`;
+      const ts  = `padding:${teamPad};text-align:left;font-size:${fontSize}px;font-weight:bold;border:1px solid #2a2a4a;background:#0d0d1a;`;
+      let headerRow = `<td style="${hs}">TEAM</td>`;
+      for (const inn of innings) { headerRow += `<td style="${hs}">${inn.num}</td>`; }
+      let awayRow = `<td style="${ts}">${awayAbbr}</td>`;
+      for (const inn of innings) {
+        const runs = inn.away?.runs ?? '-';
+        const hi = (runs > 0) ? 'color:#4CAF50;font-weight:bold;' : 'color:#aaa;';
+        awayRow += `<td style="${cs}${hi}">${runs}</td>`;
+      }
+      let homeRow = `<td style="${ts}">${homeAbbr}</td>`;
+      for (const inn of innings) {
+        const runs = inn.home?.runs ?? '-';
+        const hi = (runs > 0) ? 'color:#4CAF50;font-weight:bold;' : 'color:#aaa;';
+        homeRow += `<td style="${cs}${hi}">${runs}</td>`;
+      }
+      lineScoreHtml = `
+        <div style="margin-bottom:16px;">
+          <table style="border-collapse:collapse;background:#12122a;border-radius:8px;width:100%;table-layout:fixed;">
+            <thead><tr>${headerRow}</tr></thead>
+            <tbody><tr>${awayRow}</tr><tr>${homeRow}</tr></tbody>
+          </table>
+        </div>`;
+    }
+
+    return `
+      <div style="text-align:center;">
+        ${currentGameHtml}
+        ${winProbHtml}
+        <div style="display:flex;align-items:center;justify-content:space-around;margin-bottom:8px;">
+          <div style="flex:1;text-align:center;">
+            ${awayLogo}
+            <div style="font-weight:bold;font-size:13px;">${awayName}</div>
+            <div style="display:flex;justify-content:center;gap:10px;margin-top:4px;">
+              <span style="font-size:11px;color:#aaa;"><span style="color:#4CAF50;font-weight:bold;">${awayHits}</span> H</span>
+              <span style="font-size:11px;color:#aaa;"><span style="color:#f44336;font-weight:bold;">${awayErrors}</span> E</span>
+            </div>
+          </div>
+          <div style="flex:1;text-align:center;">
+            <div style="font-size:48px;font-weight:900;line-height:1;">${awayRuns} <span style="color:#555;font-size:32px;">-</span> ${homeRuns}</div>
+            <div style="font-size:13px;color:#4CAF50;font-weight:bold;margin-top:4px;">
+              ${inningNum > 0 ? inningHalf + ' ' + inningNum : '—'}
+            </div>
+          </div>
+          <div style="flex:1;text-align:center;">
+            ${homeLogo}
+            <div style="font-weight:bold;font-size:13px;">${homeName}</div>
+            <div style="display:flex;justify-content:center;gap:10px;margin-top:4px;">
+              <span style="font-size:11px;color:#aaa;"><span style="color:#4CAF50;font-weight:bold;">${homeHits}</span> H</span>
+              <span style="font-size:11px;color:#aaa;"><span style="color:#f44336;font-weight:bold;">${homeErrors}</span> E</span>
+            </div>
+          </div>
+        </div>
+        ${lineScoreHtml}
+        <div style="display:flex;justify-content:center;gap:32px;margin-bottom:16px;">
+          <div style="text-align:center;">
+            <div style="font-size:10px;color:#aaa;letter-spacing:1px;margin-bottom:4px;">BALLS</div>
+            ${ballDots}
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:10px;color:#aaa;letter-spacing:1px;margin-bottom:4px;">STRIKES</div>
+            ${strikeDots}
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:10px;color:#aaa;letter-spacing:1px;margin-bottom:4px;">OUTS</div>
+            ${outDots}
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;margin-bottom:16px;">
+          ${diamond}
+        </div>
+        ${nextGameHtml}
+      </div>`;
+  ]]]

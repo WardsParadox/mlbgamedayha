@@ -1,0 +1,131 @@
+type: custom:button-card
+show_name: false
+show_icon: false
+show_label: true
+tap_action:
+  action: none
+styles:
+  card:
+    - background: "#1a1a2e"
+    - border-radius: 16px
+    - padding: 16px
+  label:
+    - width: 100%
+    - text-align: center
+    - font-family: Arial, sans-serif
+    - color: white
+label: |
+  [[[
+    const records = states['sensor.al_east_standings']?.attributes?.records;
+    let teams = [];
+    let isSpringTraining = false;
+    try {
+      const alEast = (records || []).find(d => d.division?.id === 201);
+      teams = alEast?.teamRecords || [];
+      // Detect if we are in spring training by checking standingsType
+      isSpringTraining = alEast?.standingsType === 'springTraining';
+    } catch(e) {}
+
+    if (teams.length === 0) {
+      return `<div style="color:#aaa;font-size:13px;text-align:center;padding:20px;">No standings data available</div>`;
+    }
+
+    teams.sort((a, b) => (a.divisionRank || 0) - (b.divisionRank || 0));
+
+    let rows = '';
+    for (const t of teams) {
+      const teamId    = t.team?.id ?? '';
+      const teamAbbr  = t.team?.abbreviation ?? '???';
+      const wins      = t.wins ?? 0;
+      const losses    = t.losses ?? 0;
+      const pct       = t.winningPercentage ?? '.000';
+      const gb        = t.gamesBack ?? '-';
+      const home      = t.records?.overallRecords?.find(r => r.type === 'home');
+      const away      = t.records?.overallRecords?.find(r => r.type === 'away');
+      const last10    = t.records?.overallRecords?.find(r => r.type === 'lastTen');
+      const homeRec   = home   ? `${home.wins}-${home.losses}`     : '-';
+      const awayRec   = away   ? `${away.wins}-${away.losses}`     : '-';
+      const last10Rec = last10 ? `${last10.wins}-${last10.losses}` : '-';
+
+      // Spring training record
+      const stWins   = t.splitRecords?.find(r => r.type === 'grapefruit' || r.type === 'cactus' || r.type === 'spring');
+      const springW  = t.springLeagueRecord?.wins   ?? t.leagueRecord?.wins   ?? wins;
+      const springL  = t.springLeagueRecord?.losses ?? t.leagueRecord?.losses ?? losses;
+
+      const streak      = t.streak?.streakCode ?? '-';
+      const streakColor = streak.startsWith('W') ? '#4CAF50' : streak.startsWith('L') ? '#f44336' : '#aaa';
+      const rank        = t.divisionRank ?? '-';
+      const isBJ        = teamId === 141;
+      const rowBg       = isBJ ? 'background:#1a2a4a;' : '';
+      const nameBold    = isBJ ? 'font-weight:900;color:#4fc3f7;' : 'font-weight:bold;';
+      const logo        = teamId ? `<img src="https://www.mlbstatic.com/team-logos/${teamId}.svg" width="24" height="24" style="vertical-align:middle;margin-right:6px;">` : '';
+
+      if (isSpringTraining) {
+        rows += `
+          <tr style="${rowBg}">
+            <td style="padding:8px 6px;font-size:13px;${nameBold}border-bottom:1px solid #2a2a4a;">
+              <span style="color:#777;font-size:11px;margin-right:6px;">${rank}</span>${logo}${teamAbbr}
+            </td>
+            <td style="padding:8px 6px;text-align:center;font-size:13px;font-weight:bold;border-bottom:1px solid #2a2a4a;">${wins}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:13px;font-weight:bold;border-bottom:1px solid #2a2a4a;">${losses}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:12px;border-bottom:1px solid #2a2a4a;">${pct}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:12px;color:#aaa;border-bottom:1px solid #2a2a4a;">${gb}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:11px;color:#aaa;border-bottom:1px solid #2a2a4a;">${homeRec}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:11px;color:#aaa;border-bottom:1px solid #2a2a4a;">${awayRec}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:12px;font-weight:bold;color:${streakColor};border-bottom:1px solid #2a2a4a;">${streak}</td>
+          </tr>`;
+      } else {
+        rows += `
+          <tr style="${rowBg}">
+            <td style="padding:8px 6px;font-size:13px;${nameBold}border-bottom:1px solid #2a2a4a;">
+              <span style="color:#777;font-size:11px;margin-right:6px;">${rank}</span>${logo}${teamAbbr}
+            </td>
+            <td style="padding:8px 6px;text-align:center;font-size:13px;font-weight:bold;border-bottom:1px solid #2a2a4a;">${wins}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:13px;font-weight:bold;border-bottom:1px solid #2a2a4a;">${losses}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:12px;border-bottom:1px solid #2a2a4a;">${pct}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:12px;color:#aaa;border-bottom:1px solid #2a2a4a;">${gb}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:11px;color:#aaa;border-bottom:1px solid #2a2a4a;">${homeRec}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:11px;color:#aaa;border-bottom:1px solid #2a2a4a;">${awayRec}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:11px;color:#aaa;border-bottom:1px solid #2a2a4a;">${last10Rec}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:12px;font-weight:bold;color:${streakColor};border-bottom:1px solid #2a2a4a;">${streak}</td>
+          </tr>`;
+      }
+    }
+
+    const springHeader = isSpringTraining ? `
+      <tr style="background:#0d0d1a;">
+        <td style="padding:6px;text-align:left;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">TEAM</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">W</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">L</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">PCT</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">GB</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">HOME</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">AWAY</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">STRK</td>
+      </tr>` : `
+      <tr style="background:#0d0d1a;">
+        <td style="padding:6px;text-align:left;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">TEAM</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">W</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">L</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">PCT</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">GB</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">HOME</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">AWAY</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">L10</td>
+        <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">STRK</td>
+      </tr>`;
+
+    const seasonLabel = isSpringTraining
+      ? `🌴 AL EAST — SPRING TRAINING`
+      : `🏆 AL EAST STANDINGS`;
+
+    return `
+      <div style="text-align:center;">
+        <div style="font-size:10px;color:#aaa;letter-spacing:1px;margin-bottom:12px;">${seasonLabel}</div>
+        <table style="width:100%;border-collapse:collapse;background:#12122a;border-radius:10px;overflow:hidden;">
+          <thead>${springHeader}</thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div style="font-size:10px;color:#555;margin-top:8px;">Updates every 30 minutes</div>
+      </div>`;
+  ]]]

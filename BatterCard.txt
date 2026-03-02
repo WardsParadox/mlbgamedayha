@@ -1,0 +1,235 @@
+type: custom:button-card
+show_name: false
+show_icon: false
+show_label: true
+tap_action:
+  action: none
+styles:
+  card:
+    - background: "#1a1a2e"
+    - border-radius: 16px
+    - padding: 16px
+  label:
+    - width: 100%
+    - text-align: left
+    - font-family: Arial, sans-serif
+    - color: white
+label: |
+  [[[
+    const live = states['sensor.bj_master_data']?.attributes?.liveData;
+    const gd   = states['sensor.bj_master_data']?.attributes?.gameData;
+
+    const ls = live?.linescore;
+
+    // ── BATTER ───────────────────────────────────────────────
+    let batterName = 'Unknown';
+    let batterAvg = '.000', batterObp = '.000', batterHr = 0, batterRbi = 0, batterPos = '';
+    let batterHand = '';
+    let gameHits = 0, gameAb = 0, gameRbi = 0, gameHr = 0, gameBb = 0, gameSo = 0;
+    let bid = ls?.offense?.batter?.id;
+    if (!bid) {
+      try {
+        const allPlays = live.plays.allPlays;
+        bid = allPlays[allPlays.length - 1].matchup.batter.id;
+      } catch(e) {}
+    }
+    if (bid && live?.boxscore?.teams) {
+      for (const side of ['home', 'away']) {
+        const players = live.boxscore.teams[side]?.players || {};
+        for (const k of Object.keys(players)) {
+          const pl = players[k];
+          if (pl?.person?.id === bid) {
+            batterName = pl.person.fullName;
+            batterAvg  = pl.seasonStats?.batting?.avg ?? '.000';
+            batterObp  = pl.seasonStats?.batting?.obp ?? '.000';
+            batterHr   = pl.seasonStats?.batting?.homeRuns ?? 0;
+            batterRbi  = pl.seasonStats?.batting?.rbi ?? 0;
+            batterPos  = pl.position?.abbreviation ?? '';
+            gameHits   = pl.stats?.batting?.hits ?? 0;
+            gameAb     = pl.stats?.batting?.atBats ?? 0;
+            gameRbi    = pl.stats?.batting?.rbi ?? 0;
+            gameHr     = pl.stats?.batting?.homeRuns ?? 0;
+            gameBb     = pl.stats?.batting?.baseOnBalls ?? 0;
+            gameSo     = pl.stats?.batting?.strikeOuts ?? 0;
+          }
+        }
+      }
+    }
+
+    // ── PITCHER HAND + BATTER HAND ────────────────────────────
+    let pitcherHand = '';
+    let pitcherName = '';
+    try {
+      const matchup = live?.plays?.currentPlay?.matchup;
+      batterHand  = matchup?.batSide?.code ?? '';
+      pitcherHand = matchup?.pitchHand?.code ?? '';
+      pitcherName = matchup?.pitcher?.fullName ?? '';
+    } catch(e) {}
+
+    // ── BATTER VS PITCHER CAREER ──────────────────────────────
+    let vsAvg = null, vsObp = null, vsAb = null, vsH = null, vsHr = null, vsRbi = null;
+    try {
+      const matchup = live?.plays?.currentPlay?.matchup;
+      const bvp = matchup?.batterVsPitcher ?? matchup?.splits?.batterVsPitcher;
+      if (bvp) {
+        vsAvg = bvp.avg    ?? bvp.batAvg ?? null;
+        vsObp = bvp.obp    ?? null;
+        vsAb  = bvp.atBats ?? null;
+        vsH   = bvp.hits   ?? null;
+        vsHr  = bvp.homeRuns ?? null;
+        vsRbi = bvp.rbi    ?? null;
+      }
+    } catch(e) {}
+
+    // ── MATCHUP INDICATOR ─────────────────────────────────────
+    let matchupHtml = '';
+    if (batterHand || pitcherHand) {
+      const bColor = batterHand  === 'L' ? '#42a5f5' : batterHand  === 'R' ? '#ef5350' : '#aaa';
+      const pColor = pitcherHand === 'L' ? '#42a5f5' : pitcherHand === 'R' ? '#ef5350' : '#aaa';
+      const sameHand = batterHand && pitcherHand && batterHand === pitcherHand;
+      const advantageHtml = batterHand && pitcherHand
+        ? `<div style="margin-top:8px;font-size:11px;font-weight:bold;color:${sameHand ? '#f44336' : '#4CAF50'};text-align:center;">
+             ${sameHand ? '⚠ Pitcher Advantage' : '✓ Batter Advantage'}
+           </div>`
+        : '';
+
+      matchupHtml = `
+        <div style="background:#12122a;border-radius:10px;padding:10px 12px;margin-bottom:12px;text-align:center;">
+          <div style="font-size:10px;color:#aaa;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">⚔️ Matchup</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:24px;">
+            <div style="text-align:center;">
+              <div style="font-size:10px;color:#aaa;margin-bottom:2px;">BATTER</div>
+              <div style="font-size:28px;font-weight:900;color:${bColor};">${batterHand || '?'}</div>
+              <div style="font-size:11px;color:#aaa;">${batterName.split(' ').pop()}</div>
+            </div>
+            <div style="font-size:20px;color:#555;">vs</div>
+            <div style="text-align:center;">
+              <div style="font-size:10px;color:#aaa;margin-bottom:2px;">PITCHER</div>
+              <div style="font-size:28px;font-weight:900;color:${pColor};">${pitcherHand || '?'}</div>
+              <div style="font-size:11px;color:#aaa;">${pitcherName.split(' ').pop()}</div>
+            </div>
+          </div>
+          ${advantageHtml}
+        </div>`;
+    }
+
+    // ── BATTER VS PITCHER SECTION ─────────────────────────────
+    let bvpHtml = '';
+    if (vsAb !== null && vsAb > 0) {
+      bvpHtml = `
+        <div style="background:#12122a;border-radius:10px;padding:12px;margin-bottom:12px;text-align:center;">
+          <div style="font-size:10px;color:#aaa;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">📊 Career vs This Pitcher</div>
+          <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;">
+            <div style="text-align:center;"><div style="font-size:10px;color:#aaa;">AB</div><div style="font-size:20px;font-weight:bold;">${vsAb}</div></div>
+            ${vsH   !== null ? `<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">H</div><div style="font-size:20px;font-weight:bold;color:#4CAF50;">${vsH}</div></div>` : ''}
+            ${vsAvg !== null ? `<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">AVG</div><div style="font-size:20px;font-weight:bold;">${vsAvg}</div></div>` : ''}
+            ${vsObp !== null ? `<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">OBP</div><div style="font-size:20px;font-weight:bold;">${vsObp}</div></div>` : ''}
+            ${vsHr  !== null ? `<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">HR</div><div style="font-size:20px;font-weight:bold;">${vsHr}</div></div>` : ''}
+            ${vsRbi !== null ? `<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">RBI</div><div style="font-size:20px;font-weight:bold;">${vsRbi}</div></div>` : ''}
+          </div>
+        </div>`;
+    } else if (vsAb === 0) {
+      bvpHtml = `
+        <div style="background:#12122a;border-radius:10px;padding:10px 12px;margin-bottom:12px;text-align:center;">
+          <div style="font-size:10px;color:#aaa;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">📊 Career vs This Pitcher</div>
+          <div style="font-size:12px;color:#555;">First time facing this pitcher</div>
+        </div>`;
+    }
+
+    // ── BUILD HTML ───────────────────────────────────────────
+    function section(title, content) {
+      return `
+        <div style="background:#12122a;border-radius:10px;padding:12px;margin-bottom:12px;">
+          <div style="font-size:10px;color:#aaa;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">${title}</div>
+          ${content}
+        </div>`;
+    }
+
+    const gameStatLine = gameAb > 0 || gameBb > 0
+      ? `<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #2a2a4a;">
+           <div style="font-size:10px;color:#FFC107;letter-spacing:1px;margin-bottom:6px;">TODAY'S GAME</div>
+           <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;">
+             <div style="text-align:center;"><div style="font-size:10px;color:#aaa;">AB</div><div style="font-size:20px;font-weight:bold;">${gameAb}</div></div>
+             <div style="text-align:center;"><div style="font-size:10px;color:#aaa;">H</div><div style="font-size:20px;font-weight:bold;color:#4CAF50;">${gameHits}</div></div>
+             <div style="text-align:center;"><div style="font-size:10px;color:#aaa;">HR</div><div style="font-size:20px;font-weight:bold;">${gameHr}</div></div>
+             <div style="text-align:center;"><div style="font-size:10px;color:#aaa;">RBI</div><div style="font-size:20px;font-weight:bold;">${gameRbi}</div></div>
+             <div style="text-align:center;"><div style="font-size:10px;color:#4CAF50;">BB</div><div style="font-size:20px;font-weight:bold;color:${gameBb > 0 ? '#4CAF50' : 'white'};">${gameBb}</div></div>
+             <div style="text-align:center;"><div style="font-size:10px;color:#f44336;">SO</div><div style="font-size:20px;font-weight:bold;color:${gameSo > 0 ? '#f44336' : 'white'};">${gameSo}</div></div>
+           </div>
+         </div>`
+      : '';
+
+    const batterHtml = section(`🥎 Batter${batterPos ? ' <span style="background:#2a2a4a;padding:2px 8px;border-radius:4px;font-size:11px;vertical-align:middle;">' + batterPos + '</span>' : ''}`, `
+      <div style="text-align:center;">
+        <div style="font-size:20px;font-weight:bold;margin-bottom:10px;">${batterName}</div>
+        ${gameStatLine}
+        <div style="font-size:10px;color:#aaa;letter-spacing:1px;margin-bottom:6px;">SEASON</div>
+        <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;">
+          <div style="text-align:center;"><div style="font-size:10px;color:#aaa;">AVG</div><div style="font-size:20px;font-weight:bold;">${batterAvg}</div></div>
+          <div style="text-align:center;"><div style="font-size:10px;color:#aaa;">OBP</div><div style="font-size:20px;font-weight:bold;">${batterObp}</div></div>
+          <div style="text-align:center;"><div style="font-size:10px;color:#aaa;">HR</div><div style="font-size:20px;font-weight:bold;">${batterHr}</div></div>
+          <div style="text-align:center;"><div style="font-size:10px;color:#aaa;">RBI</div><div style="font-size:20px;font-weight:bold;">${batterRbi}</div></div>
+        </div>
+      </div>
+    `);
+
+    // ── CURRENT INNING OUTCOMES ───────────────────────────────
+    let inningPlays = [];
+    let inningLabel = '';
+    try {
+      const awayName = gd?.teams?.away?.name ?? 'Away';
+      const homeName = gd?.teams?.home?.name ?? 'Home';
+      const allPlays = live.plays.allPlays || [];
+      let currentInning = ls?.currentInning ?? 0;
+      let currentHalf   = ls?.inningHalf ?? '';
+      if (!currentInning || currentInning === 0) {
+        const last = allPlays[allPlays.length - 1];
+        currentInning = last?.about?.inning ?? 0;
+        currentHalf   = last?.about?.halfInning === 'top' ? 'Top' : 'Bottom';
+      }
+      const halfKey  = currentHalf.toLowerCase() === 'top' ? 'top' : 'bottom';
+      const teamName = halfKey === 'top' ? awayName : homeName;
+      inningLabel = `${currentHalf} ${currentInning} — ${teamName}`;
+      const filtered = allPlays.filter(p =>
+        p.about?.inning === currentInning &&
+        p.about?.halfInning === halfKey &&
+        p.result?.event
+      );
+      for (const play of filtered) {
+        const name       = play.matchup?.batter?.fullName ?? 'Unknown';
+        const result     = play.result?.event ?? 'Unknown';
+        const desc       = play.result?.description ?? '';
+        const isGood     = ['Single','Double','Triple','Home Run','Walk','Hit By Pitch'].includes(result);
+        const isLastPlay = play.about?.isLastPlay ?? false;
+        inningPlays.push({ name, result, desc, isGood, isLastPlay });
+      }
+    } catch(e) {}
+
+    let outcomeRows = '';
+    if (inningPlays.length === 0) {
+      outcomeRows = '<div style="color:#555;font-size:13px;">No at-bats this inning yet</div>';
+    } else {
+      for (const o of inningPlays) {
+        const lastLabel = o.isLastPlay
+          ? `<span style="background:#c0392b;color:white;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:6px;vertical-align:middle;">LAST</span>` : '';
+        outcomeRows += `
+          <div style="padding:8px 0;border-bottom:1px solid #1e1e3a;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:2px;">
+              <div style="font-size:14px;font-weight:bold;">${o.name}${lastLabel}</div>
+              <span style="font-size:13px;font-weight:bold;color:${o.isGood ? '#4CAF50' : '#f44336'};white-space:nowrap;">${o.result}</span>
+            </div>
+            ${o.desc ? `<div style="font-size:11px;color:#777;overflow-wrap:break-word;word-break:break-word;white-space:normal;">${o.desc}</div>` : ''}
+          </div>`;
+      }
+    }
+
+    const inningHtml = section(`📋 This Inning — ${inningLabel}`, outcomeRows);
+
+    return `
+      <div>
+        ${matchupHtml}
+        ${batterHtml}
+        ${bvpHtml}
+        ${inningHtml}
+      </div>`;
+  ]]]
