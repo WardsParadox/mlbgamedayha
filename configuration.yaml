@@ -1,6 +1,6 @@
 sensor:
   - platform: rest
-    name: blue_jays_game_id
+    name: mariners_game_id
     resource: "https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=136"
     scan_interval: 3600
     value_template: >
@@ -13,7 +13,7 @@ sensor:
   - platform: rest
     name: sm_master_data
     resource_template: >
-      {% set id = states('sensor.blue_jays_game_id') %}
+      {% set id = states('sensor.mariners_game_id') %}
       {% if id != 'None' and id != 'unknown' %}
         https://statsapi.mlb.com/api/v1.1/game/{{ id }}/feed/live?hydrate=lineups,boxscore,probablePitcher
       {% else %}
