@@ -1,3 +1,45 @@
+input_number:
+  mlb_refresh_count:
+    name: MLB Refresh Count
+    min: 0
+    max: 10
+    step: 1
+    initial: 0
+    mode: box
+
+automation:
+  - alias: "Reset MLB Refresh Count"
+    trigger:
+      - platform: time_pattern
+        minutes: "/30"
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.mlb_refresh_count
+        data:
+          value: 0
+
+script:
+  mlb_refresh:
+    alias: "Refresh MLB Data"
+    mode: single
+    sequence:
+      - condition: template
+        value_template: "{{ states('input_number.mlb_refresh_count') | int < 2 }}"
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.mlb_refresh_count
+        data:
+          value: "{{ states('input_number.mlb_refresh_count') | int + 1 }}"
+      - service: homeassistant.update_entity
+        target:
+          entity_id:
+            - sensor.mlb_game_id
+            - sensor.mlb_master_data
+            - sensor.mlb_standings
+            - sensor.mlb_next_game
+            - sensor.mlb_teams_data
+
 input_select:
   mlb_team:
     name: MLB Team
@@ -49,19 +91,13 @@ sensor:
 
   - platform: rest
     name: mlb_master_data
-    resource_template: >
-      {% set id = states('sensor.mlb_game_id') %}
-      {% set team_id = states('sensor.mlb_selected_team_id') | int(141) %}
-      {% if id != 'None' and id != 'unknown' %}
-        https://statsapi.mlb.com/api/v1.1/game/{{ id }}/feed/live?hydrate=lineups,boxscore,probablePitcher
-      {% else %}
-        https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId={{ team_id }}&hydrate=lineups,probablePitcher
-      {% endif %}
+    resource_template: "https://statsapi.mlb.com/api/v1.1/game/{{ states('sensor.mlb_game_id') }}/feed/live?hydrate=lineups,boxscore,probablePitcher"
     scan_interval: 5
     value_template: "{{ value_json.gameData.status.detailedState | default('No Game') }}"
     json_attributes:
       - liveData
       - gameData
+    enabled_template: "{{ states('sensor.mlb_game_id') not in ['None', 'unknown', 'unknown'] }}"
 
   - platform: rest
     name: mlb_standings
@@ -78,7 +114,7 @@ sensor:
 
   - platform: rest
     name: mlb_next_game
-    resource_template: "https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId={{ states('sensor.mlb_selected_team_id') | int(141) }}&startDate={{ now().strftime('%Y-%m-%d') }}&endDate=2026-11-01&hydrate=team,venue&limit=5"
+    resource_template: "https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId={{ states('sensor.mlb_selected_team_id') | int(141) }}&startDate={{ now().strftime('%Y-%m-%d') }}&endDate=2026-11-01&limit=5"
     scan_interval: 3600
     value_template: >
       {% if value_json.dates is defined and value_json.dates | length > 0 %}

@@ -1,0 +1,45 @@
+type: custom:button-card
+entity: input_number.mlb_refresh_count
+show_icon: true
+show_name: true
+show_label: true
+tap_action:
+  action: call-service
+  service: script.mlb_refresh
+hold_action:
+  action: call-service
+  service: homeassistant.update_entity
+  service_data:
+    entity_id: sensor.mlb_teams_data
+triggers_update:
+  - input_number.mlb_refresh_count
+name: |
+  [[[
+    const count = parseInt(entity.state) || 0;
+    const remaining = Math.max(0, 2 - count);
+    return remaining > 0
+      ? `Refresh MLB Data (${remaining} left)`
+      : 'Rate Limited — resets at :00 or :30';
+  ]]]
+label: |
+  [[[
+    const count = parseInt(entity.state) || 0;
+    return count >= 2 ? 'Tap again after the next half-hour mark' : '';
+  ]]]
+icon: mdi:refresh
+styles:
+  card:
+    - background: "#1a1a2e"
+    - border-radius: 16px
+    - padding: 12px
+    - opacity: "[[[ return (parseInt(entity.state) || 0) >= 2 ? 0.4 : 1; ]]]"
+  name:
+    - color: white
+    - font-family: Arial, sans-serif
+    - font-size: 14px
+  label:
+    - color: "#aaa"
+    - font-size: 11px
+    - font-family: Arial, sans-serif
+  icon:
+    - color: "[[[ return (parseInt(entity.state) || 0) >= 2 ? '#555' : '#4fc3f7'; ]]]"

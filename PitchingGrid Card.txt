@@ -4,6 +4,10 @@ show_icon: false
 show_label: true
 tap_action:
   action: none
+triggers_update:
+  - sensor.mlb_master_data
+  - sensor.mlb_selected_team_id
+  - input_select.mlb_team
 styles:
   card:
     - background: "#1a1a2e"
