@@ -16,9 +16,9 @@ styles:
     - color: white
 label: |
   [[[
-    const gd = states['sensor.bj_master_data']?.attributes?.gameData;
-    const live = states['sensor.bj_master_data']?.attributes?.liveData;
-    const nextDates = states['sensor.bj_next_game']?.attributes?.dates ?? [];
+    const gd = states['sensor.sm_master_data']?.attributes?.gameData;
+    const live = states['sensor.sm_master_data']?.attributes?.liveData;
+    const nextDates = states['sensor.sm_next_game']?.attributes?.dates ?? [];
 
     const awayName = gd?.teams?.away?.name ?? 'Away';
     const homeName = gd?.teams?.home?.name ?? 'Home';
@@ -108,10 +108,10 @@ label: |
 
     // ── NEXT GAME BOX FORMATTER ───────────────────────────────
     function formatGameBox(game) {
-      const BJ_ID = 141;
+      const sm_ID = 141;
       const awayTeam = game.teams?.away?.team;
       const homeTeam = game.teams?.home?.team;
-      const isHome   = homeTeam?.id === BJ_ID;
+      const isHome   = homeTeam?.id === sm_ID;
       const opponent = isHome ? awayTeam : homeTeam;
       const oppId    = opponent?.id ?? '';
       const oppName  = opponent?.name ?? 'TBD';
@@ -170,7 +170,7 @@ label: |
     // ── NEXT GAME (1 only) ────────────────────────────────────
     let nextGameHtml = '';
     try {
-      const BJ_ID = 141;
+      const sm_ID = 141;
       for (const date of nextDates) {
         for (const game of date.games) {
           const s = game.status?.abstractGameState ?? '';
