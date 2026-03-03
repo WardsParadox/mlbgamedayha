@@ -16,14 +16,18 @@ styles:
     - color: white
 label: |
   [[[
-    const records = states['sensor.al_east_standings']?.attributes?.records;
+    const records = states['sensor.mlb_standings']?.attributes?.records;
+    const myTeamId = parseInt(states['sensor.mlb_selected_team_id']?.state) || 141;
+    const myDivisionId = parseInt(states['sensor.mlb_selected_division_id']?.state) || 201;
     let teams = [];
     let isSpringTraining = false;
+    let divisionName = 'Division';
     try {
-      const alEast = (records || []).find(d => d.division?.id === 201);
-      teams = alEast?.teamRecords || [];
+      const myDivision = (records || []).find(d => d.division?.id === myDivisionId);
+      teams = myDivision?.teamRecords || [];
+      divisionName = myDivision?.division?.name || 'Division';
       // Detect if we are in spring training by checking standingsType
-      isSpringTraining = alEast?.standingsType === 'springTraining';
+      isSpringTraining = myDivision?.standingsType === 'springTraining';
     } catch(e) {}
 
     if (teams.length === 0) {
@@ -55,9 +59,9 @@ label: |
       const streak      = t.streak?.streakCode ?? '-';
       const streakColor = streak.startsWith('W') ? '#4CAF50' : streak.startsWith('L') ? '#f44336' : '#aaa';
       const rank        = t.divisionRank ?? '-';
-      const isBJ        = teamId === 141;
-      const rowBg       = isBJ ? 'background:#1a2a4a;' : '';
-      const nameBold    = isBJ ? 'font-weight:900;color:#4fc3f7;' : 'font-weight:bold;';
+      const isMyTeam    = teamId === myTeamId;
+      const rowBg       = isMyTeam ? 'background:#1a2a4a;' : '';
+      const nameBold    = isMyTeam ? 'font-weight:900;color:#4fc3f7;' : 'font-weight:bold;';
       const logo        = teamId ? `<img src="https://www.mlbstatic.com/team-logos/${teamId}.svg" width="24" height="24" style="vertical-align:middle;margin-right:6px;">` : '';
 
       if (isSpringTraining) {
@@ -115,9 +119,10 @@ label: |
         <td style="padding:6px;text-align:center;font-size:10px;color:#aaa;letter-spacing:1px;border-bottom:2px solid #2a2a4a;">STRK</td>
       </tr>`;
 
+    const divLabel = divisionName.toUpperCase();
     const seasonLabel = isSpringTraining
-      ? `🌴 AL EAST — SPRING TRAINING`
-      : `🏆 AL EAST STANDINGS`;
+      ? `🌴 ${divLabel} — SPRING TRAINING`
+      : `🏆 ${divLabel} STANDINGS`;
 
     return `
       <div style="text-align:center;">

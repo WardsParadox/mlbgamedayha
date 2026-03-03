@@ -16,9 +16,10 @@ styles:
     - color: white
 label: |
   [[[
-    const gd = states['sensor.sm_master_data']?.attributes?.gameData;
-    const live = states['sensor.sm_master_data']?.attributes?.liveData;
-    const nextDates = states['sensor.sm_next_game']?.attributes?.dates ?? [];
+    const gd = states['sensor.mlb_master_data']?.attributes?.gameData;
+    const live = states['sensor.mlb_master_data']?.attributes?.liveData;
+    const nextDates = states['sensor.mlb_next_game']?.attributes?.dates ?? [];
+    const MY_TEAM_ID = parseInt(states['sensor.mlb_selected_team_id']?.state) || 141;
 
     const awayName = gd?.teams?.away?.name ?? 'Away';
     const homeName = gd?.teams?.home?.name ?? 'Home';
@@ -108,10 +109,9 @@ label: |
 
     // ── NEXT GAME BOX FORMATTER ───────────────────────────────
     function formatGameBox(game) {
-      const sm_ID = 141;
       const awayTeam = game.teams?.away?.team;
       const homeTeam = game.teams?.home?.team;
-      const isHome   = homeTeam?.id === sm_ID;
+      const isHome   = homeTeam?.id === MY_TEAM_ID;
       const opponent = isHome ? awayTeam : homeTeam;
       const oppId    = opponent?.id ?? '';
       const oppName  = opponent?.name ?? 'TBD';
@@ -140,7 +140,7 @@ label: |
         <div style="background:#12122a;border-radius:8px;padding:8px 12px;margin-bottom:12px;">
           <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;">
             <span style="font-size:10px;color:#FFC107;letter-spacing:1px;text-transform:uppercase;font-weight:bold;">NEXT ▶</span>
-            <img src="https://www.mlbstatic.com/team-logos/141.svg" width="28" height="28" style="vertical-align:middle;">
+            <img src="https://www.mlbstatic.com/team-logos/${MY_TEAM_ID}.svg" width="28" height="28" style="vertical-align:middle;">
             <span style="font-size:13px;font-weight:bold;color:#aaa;">${homeAway}</span>
             ${oppLogo}
             <span style="font-size:13px;font-weight:bold;">${oppName}</span>
@@ -170,7 +170,6 @@ label: |
     // ── NEXT GAME (1 only) ────────────────────────────────────
     let nextGameHtml = '';
     try {
-      const sm_ID = 141;
       for (const date of nextDates) {
         for (const game of date.games) {
           const s = game.status?.abstractGameState ?? '';

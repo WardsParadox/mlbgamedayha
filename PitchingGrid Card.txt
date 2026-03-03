@@ -16,7 +16,7 @@ styles:
     - color: white
 label: |
   [[[
-    const live = states['sensor.bj_master_data']?.attributes?.liveData;
+    const live = states['sensor.mlb_master_data']?.attributes?.liveData;
     let pitcherName = 'Unknown';
     let pitchCount = 0, totalBalls = 0, totalStrikes = 0;
     let pitches = [];

@@ -16,8 +16,8 @@ styles:
     - color: white
 label: |
   [[[
-    const live = states['sensor.bj_master_data']?.attributes?.liveData;
-    const gd   = states['sensor.bj_master_data']?.attributes?.gameData;
+    const live = states['sensor.mlb_master_data']?.attributes?.liveData;
+    const gd   = states['sensor.mlb_master_data']?.attributes?.gameData;
 
     const ls = live?.linescore;
 
