@@ -16,7 +16,7 @@ triggers_update:
 name: |
   [[[
     const count = parseInt(entity.state) || 0;
-    const remaining = Math.max(0, 2 - count);
+    const remaining = Math.max(0, 5 - count);
     return remaining > 0
       ? `Refresh MLB Data (${remaining} left)`
       : 'Rate Limited - resets at :00 or :30';
@@ -24,7 +24,7 @@ name: |
 label: |
   [[[
     const count = parseInt(entity.state) || 0;
-    return count >= 2 ? 'Tap again after the next half-hour mark' : '';
+    return count >= 5 ? 'Tap again after the next half-hour mark' : '';
   ]]]
 icon: mdi:refresh
 styles:
@@ -32,7 +32,7 @@ styles:
     - background: "#1a1a2e"
     - border-radius: 16px
     - padding: 12px
-    - opacity: "[[[ return (parseInt(entity.state) || 0) >= 2 ? 0.4 : 1; ]]]"
+    - opacity: "[[[ return (parseInt(entity.state) || 0) >= 5 ? 0.4 : 1; ]]]"
   name:
     - color: white
     - font-family: Arial, sans-serif
@@ -42,4 +42,4 @@ styles:
     - font-size: 11px
     - font-family: Arial, sans-serif
   icon:
-    - color: "[[[ return (parseInt(entity.state) || 0) >= 2 ? '#555' : '#4fc3f7'; ]]]"
+    - color: "[[[ return (parseInt(entity.state) || 0) >= 5 ? '#555' : '#4fc3f7'; ]]]"

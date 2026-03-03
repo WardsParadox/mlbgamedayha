@@ -55,7 +55,7 @@ Each `.txt` file contains a YAML definition for a [button-card](https://github.c
 
 ### 5. Force refreshing data
 
-Add `RefreshCard.txt` to your dashboard. Tapping it calls `script.mlb_refresh`, which immediately re-polls all MLB REST sensors. The refresh is **rate-limited to 2 times per 30 minutes** - the counter resets automatically at every `:00` and `:30`. The card dims and shows a message when the limit is reached.
+Add `RefreshCard.txt` to your dashboard. Tapping it calls `script.mlb_refresh`, which immediately re-polls all MLB REST sensors. The refresh is **rate-limited to 5 times per 30 minutes** - the counter resets automatically at every `:00` and `:30`. The card dims and shows a message when the limit is reached.
 
 Hold-tapping the card bypasses the rate limit and specifically refreshes only the teams metadata sensor (`mlb_teams_data`), which otherwise only updates once per day.
 
