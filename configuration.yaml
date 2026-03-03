@@ -91,13 +91,23 @@ sensor:
 
   - platform: rest
     name: mlb_master_data
-    resource_template: "https://statsapi.mlb.com/api/v1.1/game/{{ states('sensor.mlb_game_id') }}/feed/live?hydrate=lineups,boxscore,probablePitcher"
+    resource_template: >
+      {% set id = states('sensor.mlb_game_id') %}
+      {% if id not in ['None', 'unknown', 'unavailable', ''] %}
+        https://statsapi.mlb.com/api/v1.1/game/{{ id }}/feed/live?hydrate=lineups,boxscore,probablePitcher
+      {% else %}
+        https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId={{ states('sensor.mlb_selected_team_id') | int(141) }}
+      {% endif %}
     scan_interval: 5
-    value_template: "{{ value_json.gameData.status.detailedState | default('No Game') }}"
+    value_template: >
+      {% if value_json is mapping and 'gameData' in value_json %}
+        {{ value_json.gameData.status.detailedState | default('No Game') }}
+      {% else %}
+        No Game
+      {% endif %}
     json_attributes:
       - liveData
       - gameData
-    enabled_template: "{{ states('sensor.mlb_game_id') not in ['None', 'unknown', 'unknown'] }}"
 
   - platform: rest
     name: mlb_standings
@@ -271,13 +281,13 @@ template:
         attributes:
           first: >
             {% set live = state_attr('sensor.mlb_master_data', 'liveData') %}
-            {{ live.linescore.offense.first is defined if live is not none else false }}
+            {{ (live.linescore.offense.first is defined) if live is not none else false }}
           second: >
             {% set live = state_attr('sensor.mlb_master_data', 'liveData') %}
-            {{ live.linescore.offense.second is defined if live is not none else false }}
+            {{ (live.linescore.offense.second is defined) if live is not none else false }}
           third: >
             {% set live = state_attr('sensor.mlb_master_data', 'liveData') %}
-            {{ live.linescore.offense.third is defined if live is not none else false }}
+            {{ (live.linescore.offense.third is defined) if live is not none else false }}
 
       # ── PITCHER ──────────────────────────────────────────────────────────
       - name: "mlb_pitcher"

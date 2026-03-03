@@ -19,7 +19,7 @@ name: |
     const remaining = Math.max(0, 2 - count);
     return remaining > 0
       ? `Refresh MLB Data (${remaining} left)`
-      : 'Rate Limited — resets at :00 or :30';
+      : 'Rate Limited - resets at :00 or :30';
   ]]]
 label: |
   [[[
