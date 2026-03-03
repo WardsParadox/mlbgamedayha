@@ -121,7 +121,7 @@ label: |
 
     const divLabel = divisionName.toUpperCase();
     const seasonLabel = isSpringTraining
-      ? `🌴 ${divLabel} — SPRING TRAINING`
+      ? `🌴 ${divLabel} - SPRING TRAINING`
       : `🏆 ${divLabel} STANDINGS`;
 
     return `

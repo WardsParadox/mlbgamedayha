@@ -67,7 +67,7 @@ label: |
         const desc    = p.details?.description ?? 'Unknown';
         const type    = p.details?.type?.description ?? 'Unknown';
         const velo    = p.pitchData?.startSpeed ?? null;
-        const veloStr = velo ? velo.toFixed(1) : '—';
+        const veloStr = velo ? velo.toFixed(1) : '-';
         pitches.push({ num: pnum, color, px, pz });
         pitchHistory.push({ num: pnum, color, desc, type, velo, veloStr });
         pitchTypeMap[type] = pitchTypeMap[type] || [];
@@ -86,7 +86,7 @@ label: |
       'Knuckleball': '#546e7a'
     };
 
-    // ── PITCH HISTORY — 2-LINE ROWS ───────────────────────────
+    // ── PITCH HISTORY - 2-LINE ROWS ───────────────────────────
     let pitchRows = '';
     if (pitchHistory.length === 0) {
       pitchRows = '<div style="color:#555;font-size:13px;padding:8px 0;">No pitches this at-bat</div>';
@@ -143,7 +143,7 @@ label: |
       const lastVelo   = veloData[veloData.length - 1].velo;
       const diff       = lastVelo - firstVelo;
       const trendColor = diff > 0.5 ? '#4CAF50' : diff < -0.5 ? '#f44336' : '#FFC107';
-      const trendLabel = diff > 0.5 ? `▲ +${diff.toFixed(1)} mph` : diff < -0.5 ? `▼ ${diff.toFixed(1)} mph` : `— Steady`;
+      const trendLabel = diff > 0.5 ? `▲ +${diff.toFixed(1)} mph` : diff < -0.5 ? `▼ ${diff.toFixed(1)} mph` : `- Steady`;
 
       const polyline = points.map(p => `${p.x},${p.y}`).join(' ');
       const dots     = points.map(p => `<circle cx="${p.x}" cy="${p.y}" r="3" fill="${trendColor}"/>`).join('');
@@ -213,7 +213,7 @@ label: |
         </div>
         ${speedTrendHtml}
         <div style="background:#12122a;border-radius:10px;padding:12px;margin-top:12px;text-align:left;">
-          <div style="font-size:10px;color:#aaa;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">⚾ Pitch History — Current At-Bat</div>
+          <div style="font-size:10px;color:#aaa;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">⚾ Pitch History - Current At-Bat</div>
           ${pitchRows}
         </div>
       </div>`;

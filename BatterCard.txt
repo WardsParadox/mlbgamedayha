@@ -189,7 +189,7 @@ label: |
       }
       const halfKey  = currentHalf.toLowerCase() === 'top' ? 'top' : 'bottom';
       const teamName = halfKey === 'top' ? awayName : homeName;
-      inningLabel = `${currentHalf} ${currentInning} — ${teamName}`;
+      inningLabel = `${currentHalf} ${currentInning} - ${teamName}`;
       const filtered = allPlays.filter(p =>
         p.about?.inning === currentInning &&
         p.about?.halfInning === halfKey &&
@@ -223,7 +223,7 @@ label: |
       }
     }
 
-    const inningHtml = section(`📋 This Inning — ${inningLabel}`, outcomeRows);
+    const inningHtml = section(`📋 This Inning - ${inningLabel}`, outcomeRows);
 
     return `
       <div>
