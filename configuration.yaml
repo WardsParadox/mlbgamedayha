@@ -170,6 +170,18 @@ template:
           {% endfor %}
           {{ found.id }}
 
+      - name: "mlb_selected_division_name"
+        state: >
+          {% set selected = states('input_select.mlb_team') %}
+          {% set teams = state_attr('sensor.mlb_teams_data', 'teams') | default([]) %}
+          {% set found = namespace(name='Division') %}
+          {% for team in teams %}
+            {% if team.name == selected %}
+              {% set found.name = team.division.name %}
+            {% endif %}
+          {% endfor %}
+          {{ found.name }}
+
       # ── GAME STATUS & SCORE ──────────────────────────────────────────────
       - name: "mlb_game_status"
         state: >

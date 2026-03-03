@@ -8,6 +8,7 @@ triggers_update:
   - sensor.mlb_standings
   - sensor.mlb_selected_team_id
   - sensor.mlb_selected_division_id
+  - sensor.mlb_selected_division_name
   - input_select.mlb_team
 styles:
   card:
@@ -24,13 +25,12 @@ label: |
     const records = states['sensor.mlb_standings']?.attributes?.records;
     const myTeamId = parseInt(states['sensor.mlb_selected_team_id']?.state) || 141;
     const myDivisionId = parseInt(states['sensor.mlb_selected_division_id']?.state) || 201;
+    const divisionName = states['sensor.mlb_selected_division_name']?.state || 'Division';
     let teams = [];
     let isSpringTraining = false;
-    let divisionName = 'Division';
     try {
       const myDivision = (records || []).find(d => d.division?.id === myDivisionId);
       teams = myDivision?.teamRecords || [];
-      divisionName = myDivision?.division?.name || 'Division';
       // Detect if we are in spring training by checking standingsType
       isSpringTraining = myDivision?.standingsType === 'springTraining';
     } catch(e) {}
