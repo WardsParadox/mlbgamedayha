@@ -74,7 +74,6 @@ input_select:
       - Texas Rangers
       - Toronto Blue Jays
       - Washington Nationals
-    initial: Toronto Blue Jays
     icon: mdi:baseball
 
 sensor:
